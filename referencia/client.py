@@ -1,10 +1,22 @@
 import socket
 
+# definindo a porta da aplicação
 PORT = 5050
-HEADER = 1024
+
+# defininfo um padrão de tamanho para as mensagens dos sockets
+HEADER = 64
+
+# defininfo formato de decodificação das mensagens dos sockets
 FORMAT = 'utf-8'
+
+# auto-explicativo
 DISCONNET_MESSAGE = "!DISCONNECT"
+
+# definindo o ip do servidor, dispositivo hospedando a aplicação do lado
+# do servidor 
 SERVER = "192.168.1.3"
+
+# definindo o formato de endereço
 ADDR = (SERVER, PORT)
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
