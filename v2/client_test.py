@@ -41,6 +41,20 @@ def send_file(filename):
     f.close()
     print(client.recv(2048).decode(FORMAT))
 
+def recv_file(filename):
+    f = open(filename, "wb")
+    file_bytes = bytes()
+    while True:
+        bytes_read = client.recv(HEADER)
+        print(f"bytes recieved: {bytes_read}")
+        if not bytes_read:
+            print("sai")
+            break
+        file_bytes += bytes_read
+    # print(f"file_bytes: {file_bytes}")
+    f.write(file_bytes)
+    f.close()
+
 # client_name
 send("thomas")
 # operacao
@@ -51,3 +65,13 @@ send("3")
 send("test")
 # file
 send_file("test")
+
+
+# # client_name
+# send("thomas")
+# # operacao
+# send("REC")
+# # filename
+# send("test")
+# # recebendo o arquivo
+# recv_file("test")
