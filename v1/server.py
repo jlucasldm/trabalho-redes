@@ -61,14 +61,44 @@ def handle_client(conn, addr, PORT):
                 if not exists(f"{DIRECTORY}/{PORT}"):
                     os.makedirs(f"{DIRECTORY}/{PORT}")
                 try:
-                    pass
+                    deposit(conn, filename, PORT)
+                    print(f"[SUCCESS] File {filename} stored at {DIRECTORY}/{PORT}")
+                    message = (f"[SUCCESS] File {filename} stored at {DIRECTORY}/{PORT}").encode(FORMAT)
+                    msg_length = len(message)
+                    send_length = str(msg_length).encode(FORMAT)
+                    send_length += b' ' * (1024 - len(msg_length))
+                    conn.send(send_length)
+                    conn.send(message)
                 except Exception as e:
-                    pass
+                    message = (f"[ERROR] Failed to store {filename} stored at {DIRECTORY}/{PORT}. Failure {e}").encode(FORMAT)
+                    msg_length = len(message)
+                    send_length = str(msg_length).encode(FORMAT)
+                    send_length += b' ' * (1024 - len(msg_length))
+                    conn.send(send_length)
+                    conn.send(message)
                 pass
             elif op == "REC":
-                pass
+                try:
+                    recover(conn, filename, PORT)
+                    print(f"[SUCCESS] File {filename} recovered at {DIRECTORY}/{PORT}")
+                except Exception as e:
+                    message = (f"[ERROR] Failed to recover {filename} stored at {DIRECTORY}/{PORT}. Failure {e}").encode(FORMAT)
+                    msg_length = len(message)
+                    send_length = str(msg_length).encode(FORMAT)
+                    send_length += b' ' * (1024 - len(msg_length))
+                    conn.send(send_length)
+                    conn.send(message)
             elif op == "DEL":
-                pass
+                try:
+                    delete(conn, filename, PORT)
+                    print(f"[SUCCESS] File {filename} deleted at {DIRECTORY}/{PORT}")
+                except Exception as e:
+                    message = (f"[ERROR] Failed to delete {filename} stored at {DIRECTORY}/{PORT}. Failure {e}").encode(FORMAT)
+                    msg_length = len(message)
+                    send_length = str(msg_length).encode(FORMAT)
+                    send_length += b' ' * (1024 - len(msg_length))
+                    conn.send(send_length)
+                    conn.send(message)
     
     conn.close()
 
@@ -88,12 +118,12 @@ def deposit(conn, filename, PORT):
 def recover(conn, filename, PORT):
     # caso o arquivo não exista
     if not exists(f"{DIRECTORY}/{PORT}/{filename}"):
-        msg = (f"File {filename} not found").encode(FORMAT)
-        msg_length = len(msg)
-        msg_length = str(msg_length).encode(FORMAT)
-        msg_length += b' ' * (1024 - len(msg_length))
-        conn.send(msg_length)
-        conn.send(msg)
+        message = (f"File {filename} not found").encode(FORMAT)
+        msg_length = len(message)
+        send_length = str(msg_length).encode(FORMAT)
+        send_length += b' ' * (1024 - len(msg_length))
+        conn.send(send_length)
+        conn.send(message)
     else:
         # definindo o diretorio e nome do arquivo
         filename = normpath(f"{DIRECTORY}/{PORT}/{filename}")
