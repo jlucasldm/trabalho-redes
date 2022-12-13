@@ -127,11 +127,18 @@ def deposit(conn, client_name):
             break
         file_bytes += bytes_read
         conn.send(f"byte recieved".encode(FORMAT))
-    conn.send(f"[SUCESS] File content recieved: {file_bytes}".encode(FORMAT))
-    print(f"[SUCESS] File content recieved: {file_bytes}")
 
-    pass
+    # fazer upload da quantidade de arquivo para uma quantidade copies de
+    # máquinas, cujos nomes correspondem aos índices de [0, ..., copies]
+    for instance in range(copies):
+        if not os.path.exists(DIRECTORY + str(instance) + "\\" + client_name + "\\"):
+            os.makedirs(DIRECTORY + str(instance) + "\\" + client_name + "\\")
+        f = open(DIRECTORY + str(instance) + "\\" + client_name + "\\" + filename, "wb")
+        f.write(file_bytes)
+        f.close()
 
+    conn.send(f"[SUCESS] File {filename} created".encode(FORMAT))
+    print(f"[SUCESS] File {filename} created")
 
 def handle_client(conn, addr):
     print("hi there")

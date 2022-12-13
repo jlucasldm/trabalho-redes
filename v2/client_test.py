@@ -46,7 +46,7 @@ send("thomas")
 # operacao
 send("DEP")
 # numero de copias
-send("1")
+send("3")
 # filename
 send("test")
 # file
