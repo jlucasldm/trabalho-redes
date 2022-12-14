@@ -30,7 +30,7 @@ def main():
         # em seu diretório 
         msg = conn.recv(msg_length).decode(FORMAT)
         print("[", addr, "] Message received. Client name: ", msg)
-        conn.send("Msg received".encode(FORMAT))
+        conn.send(f"[{addr}] Message received. Client name: {msg}".encode(FORMAT))
 
         # encerra a sessão se enviada a mensagem de desconexão
         if msg == DISCONNET_MESSAGE:
@@ -44,21 +44,20 @@ def main():
         # as opeações seguem a forma:
         # DEP := depositar
         # REC := recuperar
-        # DEL := deletar  
+        # DEL := deletar
+          
         msg_length = conn.recv(HEADER).decode(FORMAT)
         msg_length = int(msg_length)
         op = conn.recv(msg_length).decode(FORMAT)
-        print("[", addr, "] Message received. Operation: ", op)
+        print(f"[{addr}] Operation {op} received", op)
+        conn.send(f"[{addr}] Operation {op} received".encode(FORMAT))
 
         if op == "DEP":
             deposit(conn, client_name)
-            conn.close()
         elif op == "REC":
             recover(conn, client_name)
-            print("Recover")
         elif op == "DEL":
             delete(conn, client_name)
-            print("Delete")
         else:
             conn.close()
 
@@ -102,7 +101,7 @@ def list_files(conn, client_name):
         print(files_found)
     else:
         print(f"[WARNING] No files found to {client_name}")
-
+        
     conn.send(f"Files to {client_name} found: {files_found}".encode(FORMAT))
 
 def deposit(conn, client_name):
