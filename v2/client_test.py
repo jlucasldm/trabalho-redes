@@ -55,16 +55,16 @@ def recv_file(filename):
     f.write(file_bytes)
     f.close()
 
-# client_name
-send("thomas")
-# operacao
-send("DEP")
-# numero de copias
-send("3")
-# filename
-send("test")
-# file
-send_file("test")
+# # client_name
+# send("thomas")
+# # operacao
+# send("DEP")
+# # numero de copias
+# send("3")
+# # filename
+# send("test")
+# # file
+# send_file("test")
 
 
 # # client_name
@@ -75,3 +75,10 @@ send_file("test")
 # send("test")
 # # recebendo o arquivo
 # recv_file("test")
+
+# client_name
+send("thomas")
+# operacao
+send("DEL")
+# filename
+send("test")

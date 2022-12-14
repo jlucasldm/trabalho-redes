@@ -57,6 +57,7 @@ def main():
             recover(conn, client_name)
             print("Recover")
         elif op == "DEL":
+            delete(conn, client_name)
             print("Delete")
         else:
             conn.close()
@@ -168,8 +169,6 @@ def recover(conn, client_name):
             client_path = folder_path + client_name + "\\"
             client_files = os.listdir(client_path)
 
-            # pegando todos os arquivos em .\server\maquina\cliente e 
-            # armazenando na lista file_list
             if filename in client_files:
                 f = open(client_path + "\\" + filename, "rb")
                 while True:
@@ -180,12 +179,42 @@ def recover(conn, client_name):
                         break
                 f.close()
 
-                print(f"[SUCESS] File {filename} recovered")
-                conn.send(f"[SUCESS] File {filename} recovered".encode(FORMAT))
+                # print(f"[SUCESS] File {filename} recovered")
+                # conn.send(f"[SUCESS] File {filename} recovered".encode(FORMAT))
                 return
 
 def delete(conn, client_name):
-    pass
+    # recebendo o nome do arquivo
+    msg_length = conn.recv(HEADER).decode(FORMAT)
+    msg_length = int(msg_length)
+    filename = conn.recv(msg_length).decode(FORMAT)
+    print(f"[SUCESS] File name recieved: {filename}")
+    conn.send(f"[SUCESS] File name recieved: {filename}".encode(FORMAT))
+
+    # se DIRECTORY não existe, é criado
+    if not os.path.exists(DIRECTORY):
+        os.makedirs(DIRECTORY)
+
+    # todas as subpastas (máquinas) de DIRECTORY
+    directories = os.listdir(DIRECTORY)
+
+    # para cada subpasta do servidor, vamos procurar o diretorio do cliente
+    for folder in directories:
+        # setando o path da subpasta
+        folder_path = DIRECTORY + folder + "\\"
+        # retornando tudo do diretorio folder_path
+        folder_files = os.listdir(folder_path)
+
+        if client_name in folder_files:
+            # print(f"[SUCCESS] There is a {client_name} folder")
+            client_path = folder_path + client_name + "\\"
+            client_files = os.listdir(client_path)
+
+            if filename in client_files:
+                os.remove(client_path + "\\" + filename)
+        
+    print(f"[SUCESS] File {filename} deleted")
+    conn.send(f"[SUCESS] File {filename} deleted".encode(FORMAT))
 
 def handle_client(conn, addr):
     print("hi there")
