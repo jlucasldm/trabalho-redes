@@ -284,31 +284,36 @@ o servidor, que retorna ao estado de escuta e espera de uma nova conexão.
 
 import socket
 
-# definindo um padrão de tamanho para as mensagens dos sockets
+""" Definindo variáveis globais """
+# Quantidade de blocos de bytes entre as comunicações
 HEADER = 1024
-# definindo formato de decodificação das mensagens dos sockets
+# Formato de codificação/decodificação de mensagens
 FORMAT = 'utf-8'
 
+"""
+Função principal. Em main(), o socket TCP será criado, as conexões cliente-servidor serão 
+estabelecidas, operações serão invocadas, etc.
+"""
 def main():
+    # Prompt para entrada do endereço IP, porta e nome do cliente
     SERVER = input("enter the ip address in the format x.x.x.x: ")
     PORT = int(input("enter the port: "))
     CLIENT_NAME = input("enter your name: ")
 
-    # definindo o formato de endereço
+    # Atribuíndo o endereço da conexão TCP no endereço IP do servidor e na porta selecionada
     ADDR = (SERVER, PORT)
     
-    # criando o socket client
+    # Criando o socket, instancializando o cliente e estabelecendo a conexão com o servidor
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client.connect(ADDR)
 
-    # enviando CLIENT_NAME pelo socket
+    # Enviando CLIENT_NAME ao sercidor pelo socket
     send(client, CLIENT_NAME)
 
-    # recebendo resposta do servidor
+    # Recebendo resposta do servidor
     print(client.recv(HEADER).decode(FORMAT))
-    # list_files(client)
 
-    # selecionando operação
+    # Recebendo a operação e invocando a função correspondente ao serviço solicitada
     op = input("enter a operation: ")
     if op == "DEP":
         deposit(client, op)
@@ -320,8 +325,21 @@ def main():
         delete(client, op)
         pass
 
+    # Fechando conexão com o servidor
     client.close()
 
+"""
+Função para solicitar ao servidor o serviço de depósito de arquivos em algum(ns) local(ais)
+do servidor.
+
+Recebe como parâmetros o socket TCP client e a operação op.
+
+Solicita do usuário a entrada dos valores para o nome do arquivo a ser depositado filename
+e a quantidade de cópias a serem depositadas copies. Recebidos os valores, envia os dados
+para o servidor individualmente através da função auxiliar send(). Utiliza ainda a função
+auxiliar send_file() para fazer o envio ao servidor do arquivo filename no diretório atual
+do processo cliente.
+"""
 def deposit(client, op):
     # mandando op para o servidor
     send(client, op)
@@ -333,8 +351,17 @@ def deposit(client, op):
     send(client, copies)
     send(client, filename)
     send_file(client, filename)
-    pass
 
+"""
+Função para solicitar ao servidor o serviço de recuperação de arquivos em algum(ns) local(ais)
+do servidor.
+
+Recebe como parâmetros o socket TCP client e a operação op.
+
+Solicita do usuário a entrada do valor para o nome do arquivo a ser solicitado filename. 
+Recebido o valor, o envia para o servidor através da função auxiliar send(). Utiliza ainda a 
+função auxiliar recv_file() para receber do servidor o arquivo solicitado.
+"""
 def recover(client, op):
     # mandando para o servidor
     send(client, op)
@@ -344,8 +371,17 @@ def recover(client, op):
 
     send(client, filename)
     recv_file(client, filename)
-    pass
 
+
+"""
+Função para solicitar ao servidor o serviço de remoção de arquivos em todos os locais do 
+servidor.
+
+Recebe como parâmetros o socket TCP client e a operação op.
+
+Solicita do usuário a entrada do valor para o nome do arquivo a ser removido filename. 
+Recebido o valor, o envia para o servidor através da função auxiliar send().
+"""
 def delete(client, op):
     # mandando para o servidor
     send(client, op)
@@ -354,26 +390,50 @@ def delete(client, op):
     filename = input("enter the file name to delete: ")
     
     send(client, filename)
-    pass
 
-# recebe os dados do socket
+
+"""
+Função auxiliar para receber do servidor a resposta da operação de list_files().
+"""
 def list_files(client):
     msg_length = client.recv(HEADER).decode(FORMAT)
     msg_length = int(msg_length)
     files = client.recv(msg_length).decode(FORMAT)
     print(files)
 
-# função auxiliar para envio de mensagens ao servidor
+"""
+Função auxiliar para enviar mensagens aos servidor por meio de uma conexão TCP já
+estabelecida.
+
+Recebe como parâmetros o socket TCP client e a mensagem a ser enviada.
+
+Codifica a mensagem para o padrão apropriado de comunicação da conexão TCP, de
+acordo com o formato FORMAT pré-definido e iteração de dados a HEADER bytes por
+vez. Após a codificação, envia a mensagem ao servidor.
+"""
 def send(client, msg):
+    # Formatando a mensagem
     message = msg.encode(FORMAT)
     msg_length = len(message)
     send_length = str(msg_length).encode(FORMAT)
     send_length += b' ' * (HEADER - len(send_length))
+
+    # Enviando a mensagem
     client.send(send_length)
     client.send(message)
     print(client.recv(HEADER).decode(FORMAT))
 
-# função auxiliar para envio de arquivos ao servidor
+
+"""
+Função auxiliar para enviar um arquivo ao servidor por meio de uma conexão TCP já
+estabelecida.
+
+Recebe como parâmetros o socket TCP client e o nome do arquivo filename.
+
+Abre o arquivo filename no atual diretório do processo cliente, lê uma quantidade
+HEADER de bytes e envia ao servidor a quantidade de dados iterada. Após o envio de
+todos os segmentos de dados, fecha o arquivo.
+"""
 def send_file(client, filename):
     f = open(filename, "rb")
     while True:
@@ -383,7 +443,17 @@ def send_file(client, filename):
         client.send(bytes_read)
     f.close()
 
-# função auxiliar para o recebimento de arquivos do servidor
+"""
+Função auxiliar para receber um arquivo ao servidor por meio de uma conexão TCP já
+estabelecida.
+
+Recebe como parâmetros o socket TCP client e o nome do arquivo filename.
+
+Abre o arquivo filename no atual diretório do processo cliente, recebe do servidor
+uma quantidade HEADER de bytes e armazena na variável file_bytes. file_bytes recebe
+dados até o fim da recepção de segmentos de bytes provindas do servidor. Após isso,
+os dados de file_bytes são atribuídos a filename e o arquivo é fechado
+"""
 def recv_file(client, filename):
     f = open(filename, "wb")
     file_bytes = bytes()
@@ -394,9 +464,8 @@ def recv_file(client, filename):
             print("sai")
             break
         file_bytes += bytes_read
-    # print(f"file_bytes: {file_bytes}")
     f.write(file_bytes)
     f.close()
 
-
+# Executando a aplicação principal
 main()

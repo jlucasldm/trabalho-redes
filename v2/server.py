@@ -284,57 +284,61 @@ o servidor, que retorna ao estado de escuta e espera de uma nova conexão.
 
 import socket
 import os
-import threading
-from utils import message_formatter
 
+""" Definindo variáveis globais """
+# Quantidade de blocos de bytes entre as comunicações
 HEADER = 1024
-SERVER = socket.gethostbyname(socket.gethostname())
+# Endereço IP do servidor, independente do sistema final onde server.py esteja sendo executado
+SERVER = socket.gethostbyname(socket.gethostname()) 
+# Formato de codificação/decodificação de mensagens
 FORMAT = 'utf-8'
+# Diretório raíz do servidor
 DIRECTORY = '.\\server\\'
-DISCONNET_MESSAGE = "!DISCONNECT"
 
+
+"""
+Função principal. Em main(), o socket TCP será criado, as conexões cliente-servidor serão 
+estabelecidas, operações serão invocadas, etc.
+"""
 def main():
+    # Prompt para definir número de porta
     PORT = int(input("enter the port: "))
+    # Atribuíndo o endereço da conexão TCP no endereço IP do servidor e na porta selecionada
     ADDR = (SERVER, PORT)
+
+    # Criando o socket, instancializando o servidor e colocando-o no estado de espera por conexão
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind(ADDR)
     server.listen()
     print(f"[LISTENING] server is listening on IP: {SERVER}, Port: {PORT}")
 
     while True:
+        # Estabelecida uma conexão TCP com o cliente
         conn, addr = server.accept()
         print(f"[START] server is running. Accepted connection at address: \n{addr}")
         
-        # recebendo a primeira mensagem do cliente
+        # Recebendo o nome do cliente e atribuindo-o a client_name
         msg_length = conn.recv(HEADER).decode(FORMAT)
         msg_length = int(msg_length)
+        client_name = conn.recv(msg_length).decode(FORMAT)
 
-        # primeira mensagem deve ser o nome do cliente, para checagem
-        # em seu diretório 
-        msg = conn.recv(msg_length).decode(FORMAT)
-        print("[", addr, "] Message received. Client name: ", msg)
-        conn.send(f"[{addr}] Message received. Client name: {msg}".encode(FORMAT))
+        # Sinalizando recebimento
+        print("[", addr, "] Message received. Client name: ", client_name)
+        conn.send(f"[{addr}] Message received. Client name: {client_name}".encode(FORMAT))
 
-        # encerra a sessão se enviada a mensagem de desconexão
-        if msg == DISCONNET_MESSAGE:
-            conn.close()
-
-        client_name = msg
-        # checagem do diretorio do cliente
+        # Checagem de arquivos em .\server\{local}\client_name, para algum(ns) local(is) no servidor
         list_files(conn, client_name)
-
-        # recebendo a operação do cliente
-        # as opeações seguem a forma:
-        # DEP := depositar
-        # REC := recuperar
-        # DEL := deletar
           
+        # Recebendo op, o serviço a ser executado pelo servidpr
         msg_length = conn.recv(HEADER).decode(FORMAT)
         msg_length = int(msg_length)
         op = conn.recv(msg_length).decode(FORMAT)
+
+        # Sinalizando recebimento
         print(f"[{addr}] Operation {op} received", op)
         conn.send(f"[{addr}] Operation {op} received".encode(FORMAT))
 
+        # Invocando a função correspondente à operação solicitada
         if op == "DEP":
             deposit(conn, client_name)
         elif op == "REC":
@@ -344,37 +348,45 @@ def main():
         else:
             conn.close()
 
-def list_files(conn, client_name):
-    file_list = []
-    # percorrer todas as intâncias do servidor e salvar os arquivos sem 
-    # repetições
+"""
+Função para conuslta do diretório client_name em algum dos locais (dispotivos) do servidor.
 
-    # se DIRECTORY não existe, é criado
+Recebe como parâmetros o socket TCP conn e o nome do cliente client_name. 
+
+Instancializa o diretório .\\server\\, caso não exista, e percorre por todos os locais 
+(dispositivos) do servidor buscando pelo diretório client_name. Acessa todos os arquivos de 
+propriedade do cliente e retorna a ele uma resposta sinalizando se existem ou não arquivos 
+dele em algumdispotivivo do servidor.
+"""
+def list_files(conn, client_name):
+    # Variável para armazenar possíveis arquivos do cliente
+    file_list = []
+
+    # Instancializndo DIRECTORY, caso não exista
     if not os.path.exists(DIRECTORY):
         os.makedirs(DIRECTORY)
 
-    # todas as subpastas (máquinas) de DIRECTORY
+    # Armazenando uma lista com todas os locais (máquinas) de DIRECTORY
     directories = os.listdir(DIRECTORY)
     
-    # para cada subpasta do servidor, vamos procurar o diretorio do cliente
+    # Para cada subpasta do servidor, vamos procurar o diretorio client_name
     for folder in directories:
-        # setando o path da subpasta
+        # Setando o path da subpasta folder
         folder_path = DIRECTORY + folder + "\\"
-        # retornando tudo do diretorio folder_path
+        # Retornando tudo do diretorio folder_path
         folder_files = os.listdir(folder_path)
 
+        # Caso exista o diretório client_name no local (dispositivo) folder
         if client_name in folder_files:
-            # print(f"[SUCCESS] There is a {client_name} folder")
             client_path = folder_path + client_name + "\\"
             client_files = os.listdir(client_path)
 
-            # pegando todos os arquivos em .\server\maquina\cliente e 
-            # armazenando na lista file_list
+            # Pegando todos os arquivos em .\server\folder\client_name e armazenando na lista file_list
             for files in client_files:
                 if files not in file_list:
                     file_list.append(files)
 
-    # colocar todos os arquivos em uma string
+    # Colocar todos os arquivos do cliente em uma string
     files_found = ""
     if file_list:
         print(f"[SUCESS] {client_name}'s files found: {file_list}")
@@ -384,28 +396,49 @@ def list_files(conn, client_name):
     else:
         print(f"[WARNING] No files found to {client_name}")
 
+    # Sinalizando o cliente o resultado da busca
     if files_found:
         conn.send(f"Files to {client_name} found: {files_found}".encode(FORMAT))
     else:
         conn.send(f"No files to {client_name} found".encode(FORMAT))
 
+"""
+Função para atender o serviço de depósito de arquivos do cliente em algum(ns) local(is)
+do servidor. 
+
+Recebe como parâmetros o socket TCP conn e o nome do cliente client_name.
+
+Se comunica com o cliente para receber outros três parâmetros, a quantidade de cópias
+do arquivo(s) a ser(em) depositado(s) copies, o nome do arquivo a ser copiado filename
+e o conteúdo, em bytes, do arquivo (recebido de blocos em blocos de tamanho HEADER de 
+dados). Recebidos os dados, os atribui à variável file_bytes. Instancializa uma 
+quantidade copies de locais (dispositivos) no servidor com subpasta de nome client_name,
+caso não exista. Em cada um desses diretórios, cria um arquivo de nome filename e
+atribui a ele o conteúdo de file_bytes.
+
+Para cada recebimento de dados, sinaliza ao cliente o sucesso da operação.
+"""
 def deposit(conn, client_name):
-    # recebendo o numero de copias
+    # Recebendo o numero de copias do arquivo a ser depositado, copies
     msg_length = conn.recv(HEADER).decode(FORMAT)
     msg_length = int(msg_length)
     copies = conn.recv(msg_length).decode(FORMAT)
     copies = int(copies)
+
+    # Sinalizando recebimento
     print(f"[SUCESS] Number of copies recieved: {copies}")
     conn.send(f"[SUCESS] Number of copies recieved: {copies}".encode(FORMAT))
 
-    # recebendo o nome do arquivo
+    # Recebendo o nome do arquivo a ser depositado no servidor, filename
     msg_length = conn.recv(HEADER).decode(FORMAT)
     msg_length = int(msg_length)
     filename = conn.recv(msg_length).decode(FORMAT)
+
+    # Sinalizando recebimento
     print(f"[SUCESS] File name recieved: {filename}")
     conn.send(f"[SUCESS] File name recieved: {filename}".encode(FORMAT))
 
-    # recebendo os dados do arquivo
+    # Recebendo os dados de filename
     file_bytes = bytes()
     while True:
         bytes_read = conn.recv(HEADER)
@@ -413,8 +446,9 @@ def deposit(conn, client_name):
             break
         file_bytes += bytes_read
 
-    # fazer upload da quantidade de arquivo para uma quantidade copies de
-    # máquinas, cujos nomes correspondem aos índices de [0, ..., copies]
+    # Instancializa todas as copies máquinas no servidor (criando diretórios de nome 0, 1, ..., copies)
+    # e criando a subpasta client_name em cada uma delas, caso não exista. Para cada instância do local
+    # client_name, cria um arquivo de nome filename e atribui a ele os dados de file_bytes
     for instance in range(copies):
         if not os.path.exists(DIRECTORY + str(instance) + "\\" + client_name + "\\"):
             os.makedirs(DIRECTORY + str(instance) + "\\" + client_name + "\\")
@@ -422,36 +456,56 @@ def deposit(conn, client_name):
         f.write(file_bytes)
         f.close()
 
+    # Sinalizando sucesso da operação
     conn.send(f"[SUCESS] File {filename} created".encode(FORMAT))
     print(f"[SUCESS] File {filename} created")
 
+
+"""
+Função para atender o serviço de recuperação de arquivos do cliente no servidor. 
+
+Recebe como parâmetros o socket TCP conn e o nome do cliente client_name.
+
+Se comunica com o cliente para receber o nome do arquivo a ser recuperado filename. 
+Recebido o dado, itera sobre todos os locais do servidor buscando um diretório de nome
+client_name. Se encontrado, checa a existência do arquivo filename na lista de
+arquivos no diretório. Se encontrado, itera sobre os dados de filename e envia ao
+cliente de blocos em blocos de dados de tamanho HEADER (definido pela aplicação como
+1024 bytes).
+
+Para cada recebimento de dados, sinaliza ao cliente o sucesso da operação.
+"""
 def recover(conn, client_name):
-    # recebendo o nome do arquivo
+    # Recebendo o nome do arquivo a ser depositado no servidor, filename
     msg_length = conn.recv(HEADER).decode(FORMAT)
     msg_length = int(msg_length)
     filename = conn.recv(msg_length).decode(FORMAT)
+
+    # Sinalizando recebimento
     print(f"[SUCESS] File name recieved: {filename}")
     conn.send(f"[SUCESS] File name recieved: {filename}".encode(FORMAT))
 
-    # se DIRECTORY não existe, é criado
+    # Instancializndo DIRECTORY, caso não exista
     if not os.path.exists(DIRECTORY):
         os.makedirs(DIRECTORY)
 
-    # todas as subpastas (máquinas) de DIRECTORY
+    # Armazenando uma lista com todas os locais (máquinas) de DIRECTORY
     directories = os.listdir(DIRECTORY)
 
-    # para cada subpasta do servidor, vamos procurar o diretorio do cliente
+    # Para cada subpasta do servidor, vamos procurar o diretorio client_name
     for folder in directories:
-        # setando o path da subpasta
+        # Setando o path da subpasta folder
         folder_path = DIRECTORY + folder + "\\"
-        # retornando tudo do diretorio folder_path
+        # Retornando tudo do diretorio folder_path
         folder_files = os.listdir(folder_path)
 
+        # Caso exista o diretório client_name no local (dispositivo) folder
         if client_name in folder_files:
-            # print(f"[SUCCESS] There is a {client_name} folder")
             client_path = folder_path + client_name + "\\"
             client_files = os.listdir(client_path)
 
+            # Caso o arquivo filename existe no local, seus dados são lidos e enviados ao cliente
+            # de blocos em blocos de bytes de tamanho HEADER
             if filename in client_files:
                 f = open(client_path + "\\" + filename, "rb")
                 while True:
@@ -461,45 +515,61 @@ def recover(conn, client_name):
                     if not bytes_read:
                         break
                 f.close()
-
-                # print(f"[SUCESS] File {filename} recovered")
-                # conn.send(f"[SUCESS] File {filename} recovered".encode(FORMAT))
                 return
 
+
+"""
+Função para atender o serviço de remoção de arquivos do cliente no servidor. 
+
+Recebe como parâmetros o socket TCP conn e o nome do cliente client_name.
+
+Se comunica com o cliente para receber o nome do arquivo a ser removido filename. 
+Recebido o dado, itera sobre todos os locais do servidor buscando todos os diretóriod 
+de nome client_name. Para cada instância encontrada, caso exista o arquivo filename,
+o remove do local.
+
+Para cada recebimento de dados, sinaliza ao cliente o sucesso da operação.
+
+Após a remoção, sinaliza o cliente o sucesso da operação.
+"""
 def delete(conn, client_name):
-    # recebendo o nome do arquivo
+    # Recebendo o numero de copias do arquivo a ser depositado, copies
     msg_length = conn.recv(HEADER).decode(FORMAT)
     msg_length = int(msg_length)
     filename = conn.recv(msg_length).decode(FORMAT)
+
+    # Sinalizando recebimento
     print(f"[SUCESS] File name recieved: {filename}")
     conn.send(f"[SUCESS] File name recieved: {filename}".encode(FORMAT))
 
-    # variável de sinalização de remoção
+    # Setando a variável de sinalização de remoção
     removed = False
 
-    # se DIRECTORY não existe, é criado
+    # Instancializndo DIRECTORY, caso não exista
     if not os.path.exists(DIRECTORY):
         os.makedirs(DIRECTORY)
 
-    # todas as subpastas (máquinas) de DIRECTORY
+    # Armazenando uma lista com todas os locais (máquinas) de DIRECTORY
     directories = os.listdir(DIRECTORY)
 
-    # para cada subpasta do servidor, vamos procurar o diretorio do cliente
+    # Para cada subpasta do servidor, vamos procurar o diretorio client_name
     for folder in directories:
-        # setando o path da subpasta
+        # Setando o path da subpasta folder
         folder_path = DIRECTORY + folder + "\\"
-        # retornando tudo do diretorio folder_path
+        # Retornando tudo do diretorio folder_path
         folder_files = os.listdir(folder_path)
 
+        # Caso exista o diretório client_name no local (dispositivo) folder
         if client_name in folder_files:
-            # print(f"[SUCCESS] There is a {client_name} folder")
             client_path = folder_path + client_name + "\\"
             client_files = os.listdir(client_path)
 
+            # Caso o arquivo existe no local, ele é removido
             if filename in client_files:
                 os.remove(client_path + "\\" + filename)
                 removed = True
         
+    # Sinalizando sucesso da operação
     if removed:
         print(f"[SUCESS] File {filename} deleted")
         conn.send(f"[SUCESS] File {filename} deleted".encode(FORMAT))
@@ -507,8 +577,7 @@ def delete(conn, client_name):
         print(f"[WARNING] FILE {filename} not found")
         conn.send(f"[WARNING] FILE {filename} not found".encode(FORMAT))
 
-def handle_client(conn, addr):
-    print("hi there")
-    pass
 
+
+# Executando a aplicação principal
 main()
