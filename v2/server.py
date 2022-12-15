@@ -438,6 +438,13 @@ def deposit(conn, client_name):
     print(f"[SUCESS] File name recieved: {filename}")
     conn.send(f"[SUCESS] File name recieved: {filename}".encode(FORMAT))
 
+    # Recebendo resposta se o arquivo a ser depositado existe no diretório do cliente
+    found = conn.recv(HEADER).decode(FORMAT)
+
+    if int(found) == 0:
+        print(f"[WARNING] File {filename} does'nt exists on client's directory")
+        return
+
     # Recebendo os dados de filename
     file_bytes = bytes()
     while True:
@@ -518,6 +525,10 @@ def recover(conn, client_name):
                 f.close()
                 return
 
+    print(f"[WARNING] FiLE {filename} not found")
+    conn.send(str(0).encode(FORMAT))
+    return
+
 
 """
 Função para atender o serviço de remoção de arquivos do cliente no servidor. 
@@ -575,8 +586,8 @@ def delete(conn, client_name):
         print(f"[SUCESS] File {filename} deleted")
         conn.send(f"[SUCESS] File {filename} deleted".encode(FORMAT))
     else:
-        print(f"[WARNING] FILE {filename} not found")
-        conn.send(f"[WARNING] FILE {filename} not found".encode(FORMAT))
+        print(f"[WARNING] FiLE {filename} not found")
+        conn.send(f"[WARNING] FiLE {filename} not found".encode(FORMAT))
 
 
 

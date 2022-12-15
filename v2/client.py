@@ -283,6 +283,8 @@ o servidor, que retorna ao estado de escuta e espera de uma nova conexão.
 """
 
 import socket
+import pathlib
+import os
 
 """ Definindo variáveis globais """
 # Quantidade de blocos de bytes entre as comunicações
@@ -350,6 +352,13 @@ def deposit(client, op):
 
     send(client, copies)
     send(client, filename)
+
+    # Checando se o arquivo existe no diretório atual
+    if filename not in os.listdir(os.getcwd()):
+        print(f"[WARNING] FiLE {filename} not found in this directory")
+        client.send(str(0).encode(FORMAT))
+        return
+
     send_file(client, filename)
 
 """
@@ -436,6 +445,7 @@ todos os segmentos de dados, fecha o arquivo.
 """
 def send_file(client, filename):
     f = open(filename, "rb")
+
     while True:
         bytes_read = f.read(HEADER)
         if not bytes_read:
@@ -455,10 +465,23 @@ dados até o fim da recepção de segmentos de bytes provindas do servidor. Apó
 os dados de file_bytes são atribuídos a filename e o arquivo é fechado
 """
 def recv_file(client, filename):
+    # Flag para continuidade do programa
+    found = client.recv(HEADER).decode(FORMAT)
+    found = int(found)
+
+    if found == 0:
+        print(f"[WARNING] FiLE {filename} not found")
+        return
+
+    # Abrindo arquivo filename
     f = open(filename, "wb")
+
+    # Tamanho do arquivo, variável auxiliar para determinar parada de recebimento 
+    # de dados
     filesize = client.recv(HEADER).decode(FORMAT)
     filesize = int(filesize)
 
+    # Recebendo dados e escrevendo em filename
     while filesize > 0:
         bytes_read = client.recv(HEADER)
         f.write(bytes_read)
