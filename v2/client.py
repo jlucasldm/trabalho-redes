@@ -456,15 +456,14 @@ os dados de file_bytes são atribuídos a filename e o arquivo é fechado
 """
 def recv_file(client, filename):
     f = open(filename, "wb")
-    file_bytes = bytes()
-    while True:
+    filesize = client.recv(HEADER).decode(FORMAT)
+    filesize = int(filesize)
+
+    while filesize > 0:
         bytes_read = client.recv(HEADER)
-        print(f"bytes recieved: {bytes_read}")
-        if not bytes_read:
-            print("sai")
-            break
-        file_bytes += bytes_read
-    f.write(file_bytes)
+        f.write(bytes_read)
+        filesize -= HEADER
+    
     f.close()
 
 # Executando a aplicação principal

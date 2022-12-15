@@ -508,12 +508,13 @@ def recover(conn, client_name):
             # de blocos em blocos de bytes de tamanho HEADER
             if filename in client_files:
                 f = open(client_path + "\\" + filename, "rb")
+                file_size = os.path.getsize(client_path + "\\" + filename)
+                conn.send(str(file_size).encode(FORMAT))
                 while True:
                     bytes_read = f.read(HEADER)
-                    conn.send(bytes_read)
-                    print(f"bytes sent: {bytes_read}")
                     if not bytes_read:
                         break
+                    conn.send(bytes_read)
                 f.close()
                 return
 
