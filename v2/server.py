@@ -132,6 +132,154 @@ de cada operação será melhor abordado mais adiante.
 
 Finalizada a operação, o cliente encerra a conexão TCP e o servidor retorna
 ao estado de escuta, esperando uma conexão de um novo cliente.
+
+
+[OPERAÇÃO DE DEPÓSITO]
+A aplicação fornece três serviços: depósito de um arquivo no servidor,
+recuperação de um arquivo no servidor e serviço de remoção. O cliente
+seleciona a operação desejada de acordo com sgeuinte o padrão de fomato:
+DEP := filename (nome do arquivo a ser depositado no servidor)
+       copies (número de cópias a serem depositadas no servidor)
+REC := filename (nome do arquivo a ser recuperado pelo servidor)
+DEL := filename (nome do arquivo a ser removido do servidor)
+
+Selecionada a operação, o cliente atribui seu valor à variável op e a 
+transmite ao servidor através da conexão TCP. Ao receber op, o servidor
+retorna ao cliente a mensagem:
+[{endereço da conexão}] Operation {op} received
+
+O servidor, ao rebeber o valor DEP, invoca a função deposit() e aguarda 
+conexão do cliente, que enviará os valores necessários para executar a 
+operação. Os demais argumentos necessários são:
+filename := nome do arquivo, no diretório atual do processo cliente, a
+            ser depositado no servidor
+  copies := número de cópias do arquivo a ser armazenadas no servidor
+
+Cabe comentar que o arquivo enviado irá sobrescrever a cópia no servidor,
+caso exista.
+
+Definidos os parâmetros e armazenados nas suas respectivas variáveis, o
+cliente, individualmente, os envia ao servidor pelo socket TCP. Ao 
+receber os dados, o servidor envia as seguintes respostas ao cliente:
+[SUCESS] Number of copies recieved: {copies}
+[SUCESS] File name recieved: {filename}
+
+Um terceiro parâmetro é enviado ao servidor, o arquivo no diretório atual
+do processo cliente. O arquivo, cujo nome é filename, é aberto e 
+atribuído à variável file em client.py. O processo cliente então envia
+file para o servidor através do socket TCP.
+
+Ao receber o arquivo, o servidor itera sobre file de blocos em blocos de 
+bytes (definido pela variável global HEADER, atribuído a 1024 bytes). Os
+dados iterados são atribuídos à uma variável local file_bytes. Dessa
+forma, a função deposit() consegue, com êxito, ter acesso à uma cópia de
+file antes de efetivamente instancializar o arquivo no servidor.
+
+Tendo acesso ao conteúdo do arquivo, deposit() então itera sobre os 
+diretórios do servidor, buscando pelo diretório client_name para uma
+quantidade copies de locais (dispositivos) existentes. Cada local é
+nomeado por um inteiro, a partir do índice 0. Caso não exista o diretório
+client_name em todos os copies locais no servidor, então são criados os
+locais:
+.\\server\\0\\client_name
+.\\server\\1\\client_name
+...
+.\\server\\copies\\client_name
+
+Para cada client_name, nos locais 0 a copies, o servidor cria um arquivo
+filename e atribui a ele o conteúdo de file_bytes. O processo então
+informa ao cliente o sucesso da operação. O cliente, ao receber a 
+confirmação da operação, encerra a conexão TCP com o servidor, que retorna
+ao estado de escuta e espera de uma nova conexão.
+
+
+[OPERAÇÃO DE RECUPERAÇÃO]
+A aplicação fornece três serviços: depósito de um arquivo no servidor,
+recuperação de um arquivo no servidor e serviço de remoção. O cliente
+seleciona a operação desejada de acordo com sgeuinte o padrão de fomato:
+DEP := filename (nome do arquivo a ser depositado no servidor)
+       copies (número de cópias a serem depositadas no servidor)
+REC := filename (nome do arquivo a ser recuperado pelo servidor)
+DEL := filename (nome do arquivo a ser removido do servidor)
+
+Selecionada a operação, o cliente atribui seu valor à variável op e a 
+transmite ao servidor através da conexão TCP. Ao receber op, o servidor
+retorna ao cliente a mensagem:
+[{endereço da conexão}] Operation {op} received
+
+O servidor, ao rebeber o valor REC, invoca a função recover() e aguarda 
+conexão do cliente, que enviará os valores necessários para executar a 
+operação. O demais argumento necessário é:
+filename := nome do arquivo, no diretório atual do processo cliente, a
+            ser depositado no servidor
+
+Definido o parâmetro e armazenado na sua respectiva variável, o cliente
+o envia ao servidor pelo socket TCP. Ao receber filename, o servidor 
+envia a seguinte resposta ao cliente:
+[SUCESS] File name recieved: {filename}
+
+O servidor então busca por todos os diretórios do servidor, buscando 
+pelo diretório client_name em todos os locais (dispositivos) existentes. 
+Cada local é nomeado por um inteiro, a partir do índice 0. O endereço
+segue o seguinte formato:
+.\\server\\0\\client_name
+
+Encontrado o diretório em algum dos locais do servidor, o processo então
+abre o arquivo filename e envia segmentos de bytes do tamanho HEADER (por
+padrão adotado pela implementação, atribuído a 1024 bytes) ao cliente. O
+cliente, por sua vez, recebe cada segmento e atribuí a uma variável
+file_bytes. Após o envio e recebimento de todos os segmentos de bytes do
+arquivo no servidor, o cliente cria um arquivo de nome filename em seu
+diretório atual e atribui file_bytes ao seu conteúdo.
+
+Por fim, o servidor informa ao cliente o sucesso da operação. O cliente, 
+ao receber a confirmação da operação, encerra a conexão TCP com o servidor, 
+que retorna ao estado de escuta e espera de uma nova conexão.
+
+
+[OPERAÇÃO DE REMOÇÃO]
+A aplicação fornece três serviços: depósito de um arquivo no servidor,
+recuperação de um arquivo no servidor e serviço de remoção. O cliente
+seleciona a operação desejada de acordo com sgeuinte o padrão de fomato:
+DEP := filename (nome do arquivo a ser depositado no servidor)
+       copies (número de cópias a serem depositadas no servidor)
+REC := filename (nome do arquivo a ser recuperado pelo servidor)
+DEL := filename (nome do arquivo a ser removido do servidor)
+
+Selecionada a operação, o cliente atribui seu valor à variável op e a 
+transmite ao servidor através da conexão TCP. Ao receber op, o servidor
+retorna ao cliente a mensagem:
+[{endereço da conexão}] Operation {op} received
+
+O servidor, ao rebeber o valor DEL, invoca a função delete() e aguarda 
+conexão do cliente, que enviará o valore necessário para executar a 
+operação. O demais argumento necessário é:
+filename := nome do arquivo, no diretório atual do processo cliente, a
+            ser depositado no servidor
+
+Definido o parâmetro e armazenado na sua respectiva variável, o cliente
+o envia ao servidor pelo socket TCP. Ao receber filename, o servidor 
+envia a seguinte resposta ao cliente:
+[SUCESS] File name recieved: {filename}
+
+O servidor então busca por todos os diretórios do servidor, buscando 
+pelo diretório client_name em todos os locais (dispositivos) existentes. 
+Cada local é nomeado por um inteiro, a partir do índice 0. O endereço
+segue o seguinte formato:
+.\\server\\0\\client_name
+
+Para cada local encontrado, o servidor checa a existência de filename no
+diretório. Caso encontrado, o servidor remove o arquivo e retorna ao
+cliente uma mensagem do tipo:
+[SUCESS] File {filename} deleted
+
+Caso o arquivo não seja encontrado em nenhum local, o servidor retorna ao
+cliente uma mensagem do tipo:
+[WARNING] FILE {filename} not found
+
+O cliente, ao receber a confirmação da operação, encerra a conexão TCP com 
+o servidor, que retorna ao estado de escuta e espera de uma nova conexão.
+
 """
 
 import socket
@@ -264,7 +412,6 @@ def deposit(conn, client_name):
         if not bytes_read:
             break
         file_bytes += bytes_read
-        conn.send(f"byte recieved".encode(FORMAT))
 
     # fazer upload da quantidade de arquivo para uma quantidade copies de
     # máquinas, cujos nomes correspondem aos índices de [0, ..., copies]
@@ -327,6 +474,9 @@ def delete(conn, client_name):
     print(f"[SUCESS] File name recieved: {filename}")
     conn.send(f"[SUCESS] File name recieved: {filename}".encode(FORMAT))
 
+    # variável de sinalização de remoção
+    removed = False
+
     # se DIRECTORY não existe, é criado
     if not os.path.exists(DIRECTORY):
         os.makedirs(DIRECTORY)
@@ -348,9 +498,14 @@ def delete(conn, client_name):
 
             if filename in client_files:
                 os.remove(client_path + "\\" + filename)
+                removed = True
         
-    print(f"[SUCESS] File {filename} deleted")
-    conn.send(f"[SUCESS] File {filename} deleted".encode(FORMAT))
+    if removed:
+        print(f"[SUCESS] File {filename} deleted")
+        conn.send(f"[SUCESS] File {filename} deleted".encode(FORMAT))
+    else:
+        print(f"[WARNING] FILE {filename} not found")
+        conn.send(f"[WARNING] FILE {filename} not found".encode(FORMAT))
 
 def handle_client(conn, addr):
     print("hi there")
