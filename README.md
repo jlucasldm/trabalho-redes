@@ -48,4 +48,10 @@ desejada. Um socket TCP será criado e o servidor instacializado, a espera
 da conexão de um cliente. Em outro terminal, execute client.py e defina
 o endereço IP do servidor, porta correspondente e um nome de usuário. A
 conexão entre os processos será estabelecida e o processo cliente poderá
-fazer requiisições ao servidor dos serviços fornecidos pela aplicação
+fazer requiisições ao servidor dos serviços fornecidos pela aplicação.
+
+## Documentação
+
+Em ambos os arquivos, server.py e client.py, consta a documentação do 
+escopo geral do trabalho, além das particularidades de cada processo e suas
+respectivas funções.
