@@ -3,9 +3,9 @@
 Este trabalho possui como finalidade a implementação de uma aplicação de
 depósito de arquivo com recuperação. Através do modelo cliente-servidor, a 
 aplicação fornece os seguintes serviços:
-  i) depósito de arquivos
- ii) recuperação de arquivos
-iii) remoção de arquivos
+  * depósito de arquivos
+  * recuperação de arquivos
+  * remoção de arquivos
 
 No modo de depósito, o cliente informa ao servidor o arquivo a ser 
 depositado e o número de cópias. O servidor guarda a quantidade informada
