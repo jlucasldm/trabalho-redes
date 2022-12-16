@@ -1,4 +1,4 @@
-# trabalho-redes
+# MATA59 - Implementação de uma aplicação cliente-servidor
 
 Este trabalho possui como finalidade a implementação de uma aplicação de
 depósito de arquivo com recuperação. Através do modelo cliente-servidor, a 
