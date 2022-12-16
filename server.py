@@ -27,7 +27,7 @@ ser recuperado do servidor. O servidor encontrará o arquivo, de algum dos
 possíveis locais onde ele esteja armazenado, e o devolve ao cliente.
 
 No modo de remoção, o cliente informa ao servidor o nome do arquivo a ser
-removido do servido. O servidor então remove o arquivo solicitado em todas
+removido do servidor. O servidor então remove o arquivo solicitado em todas
 os locais (abstrações para dispositivos) onde exista uma cópia do mesmo.
 
 A implementação do projeto se deu através da programação, em python, de 
@@ -345,8 +345,6 @@ def main():
             recover(conn, client_name)
         elif op == "DEL":
             delete(conn, client_name)
-        else:
-            conn.close()
 
 """
 Função para conuslta do diretório client_name em algum dos locais (dispotivos) do servidor.
@@ -525,8 +523,6 @@ def recover(conn, client_name):
                 f.close()
                 return
 
-    print(f"[WARNING] FiLE {filename} not found")
-    conn.send(str(0).encode(FORMAT))
     return
 
 
@@ -545,7 +541,7 @@ Para cada recebimento de dados, sinaliza ao cliente o sucesso da operação.
 Após a remoção, sinaliza o cliente o sucesso da operação.
 """
 def delete(conn, client_name):
-    # Recebendo o numero de copias do arquivo a ser depositado, copies
+    # Recebendo o nome do arquivo a ser removido, copies
     msg_length = conn.recv(HEADER).decode(FORMAT)
     msg_length = int(msg_length)
     filename = conn.recv(msg_length).decode(FORMAT)

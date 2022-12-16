@@ -283,7 +283,6 @@ o servidor, que retorna ao estado de escuta e espera de uma nova conexão.
 """
 
 import socket
-import pathlib
 import os
 
 """ Definindo variáveis globais """
@@ -358,6 +357,8 @@ def deposit(client, op):
         print(f"[WARNING] FiLE {filename} not found in this directory")
         client.send(str(0).encode(FORMAT))
         return
+    else:
+        client.send(str(1).encode(FORMAT))
 
     send_file(client, filename)
 
@@ -465,14 +466,6 @@ dados até o fim da recepção de segmentos de bytes provindas do servidor. Apó
 os dados de file_bytes são atribuídos a filename e o arquivo é fechado
 """
 def recv_file(client, filename):
-    # Flag para continuidade do programa
-    found = client.recv(HEADER).decode(FORMAT)
-    found = int(found)
-
-    if found == 0:
-        print(f"[WARNING] FiLE {filename} not found")
-        return
-
     # Abrindo arquivo filename
     f = open(filename, "wb")
 
